@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Sanctuary: Virtual Pet Care Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <style>
+        :root {
+            --primary: #4e54c8;
+            --secondary: #8f94fb;
+            --accent: #ff6b6b;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+            --warning: #ffc107;
+            --info: #17a2b8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to right, #4e54c8, #8f94fb);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .menu {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .menu a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .menu a:hover, .menu a.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .game-canvas {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #pet-3d-view {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .pet-selection {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 5px;
+        }
+        
+        .pet-option {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+            min-width: 120px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+        }
+        
+        .pet-option:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .pet-option.active {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid var(--accent);
+        }
+        
+        .pet-option img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .action-btn {
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .action-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-3px);
+        }
+        
+        .action-btn i {
+            font-size: 1.5rem;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 5px;
+            transition: width 0.5s;
+        }
+        
+        .mini-game {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .close-game {
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .matching-game {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .card {
+            aspect-ratio: 1;
+            background: var(--primary);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .rhythm-game {
+            text-align: center;
+        }
+        
+        .rhythm-notes {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .note {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+        }
+        
+        .note.active {
+            background: var(--accent);
+            transform: scale(1.1);
+        }
+        
+        .social-share {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .social-btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: var(--info);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .menu {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .matching-game {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Pet Sanctuary</div>
+            <div class="tagline">Rescue and nurture fantastical creatures in your virtual sanctuary</div>
+        </header>
+        
+        <div class="menu" data-nav-menu>
+            <a href="index.html" class="active">Home</a>
+            <a href="game.html">Play Game</a>
+            <a href="about.html">About</a>
+            <a href="blog.html">Blog</a>
+            <a href="faq.html">FAQ</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="#contact">Contact</a>
+        </div>
+        
+        <div class="game-container">
+            <div class="game-canvas">
+                <div id="pet-3d-view"></div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="happiness">75%</div>
+                    <div class="stat-label">Happiness</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="hunger">60%</div>
+                    <div class="stat-label">Hunger</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="energy">80%</div>
+                    <div class="stat-label">Energy</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pet-selection">
+                <div class="pet-option active" data-pet="dragon">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjZmY2YjZiIiBkPSJNNTAgMTBjLTEwIDAtMjAgNS0yNSAxNSAtNSAxMC0zIDI1IDUgMzUgOCAxMCAyMiAxNSAzNSAxNSAxMyAwIDI3LTUgMzUtMTUgOC0xMCAxMC0yNSA1LTM1QzcwIDE1IDYwIDEwIDUwIDEweiIvPjxwYXRoIGZpbGw9IiNmZjhiOGIiIGQ9Ik00MCA0MGMtNSA1LTUgMTUgMCAyMCA1IDUgMTUgNSAyMCAwIDUtNSA1LTE1IDAtMjAtNS01LTE1LTUtMjAgMHoiLz48cGF0aCBmaWxsPSIjZmY2YjZiIiBkPSJNMzUgNjBsLTUgMTAgMTAgMTAgMTAgLTEwIC01IC0xMHoiLz48cGF0aCBmaWxsPSIjZmY2YjZiIiBkPSJNNjUgNjBsNSA1IC01IDUgLTUgLTUgNSAtNXoiLz48L3N2Zz4=" alt="Dragon">
+                    <div>Dragon</div>
+                </div>
+                <div class="pet-option" data-pet="phoenix">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjZmZjYzAwIiBkPSJNNjAgMTBjLTEwIDAtMTggNS0yNSAxNSAtNyAxMC01IDI1IDIgMzUgNyAxMCAyMCAxNSAzMyAxNSAxMyAwIDI2LTUgMzMtMTUgNy0xMCA5LTI1IDItMzVDNzggMTUgNzAgMTAgNjAgMTB6Ii8+PHBhdGggZmlsbD0iI2ZmZWMwMCIgZD0iTTQ1IDQwYy01IDUtNSAxNSAwIDIwIDUgNSAxNSA1IDIwIDAgNS01IDUtMTUgMC0yMC01LTUtMTUtNS0yMCAweiIvPjxwYXRoIGZpbGw9IiNmZmNjMDAiIGQ9Ik0zNSA2MGwtNSAxMCAxMCAxMCAxMCAtMTAgLTUgLTEweiIvPjxwYXRoIGZpbGw9IiNmZmNjMDAiIGQ9Ik02NSA2MGw1IDUgLTUgNSAtNSAtNSA1IC01eiIvPjwvc3ZnPg==" alt="Phoenix">
+                    <div>Phoenix</div>
+                </div>
+                <div class="pet-option" data-pet="unicorn">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNNjAgMTBjLTEwIDAtMTggNS0yNSAxNSAtNyAxMC01IDI1IDIgMzUgNyAxMCAyMCAxNSAzMyAxNSAxMyAwIDI2LTUgMzMtMTUgNy0xMCA5LTI1IDItMzVDNzggMTUgNzAgMTAgNjAgMTB6Ii8+PHBhdGggZmlsbD0iI2JiZGRmZiIgZD0iTTQ1IDQwYy01IDUtNSAxNSAwIDIwIDUgNSAxNSA1IDIwIDAgNS01IDUtMTUgMC0yMC01LTUtMTUtNS0yMCAweiIvPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik0zNSA2MGwtNSAxMCAxMCAxMCAxMCAtMTAgLTUgLTEweiIvPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02NSA2MGw1IDUgLTUgNSAtNSAtNSA1IC01eiIvPjxwYXRoIGZpbGw9IiNmZmNjMDAiIGQ9Ik01MCAxNWwtNSA1IDEwIDAgLTUgLTV6Ii8+PC9zdmc+" alt="Unicorn">
+                    <div>Unicorn</div>
+                </div>
+                <div class="pet-option" data-pet="griffin">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjY2E4ODMzIiBkPSJNNjAgMTBjLTEwIDAtMTggNS0yNSAxNSAtNyAxMC01IDI1IDIgMzUgNyAxMCAyMCAxNSAzMyAxNSAxMyAwIDI2LTUgMzMtMTUgNy0xMCA5LTI1IDItMzVDNzggMTUgNzAgMTAgNjAgMTB6Ii8+PHBhdGggZmlsbD0iI2ZmY2MwMCIgZD0iTTQ1IDQwYy01IDUtNSAxNSAwIDIwIDUgNSAxNSA1IDIwIDAgNS01IDUtMTUgMC0yMC01LTUtMTUtNS0yMCAweiIvPjxwYXRoIGZpbGw9IiNjYTg4MzMiIGQ9Ik0zNSA2MGwtNSAxMCAxMCAxMCAxMCAtMTAgLTUgLTEweiIvPjxwYXRoIGZpbGw9IiNjYTg4MzMiIGQ9Ik02NSA2MGw1IDUgLTUgNSAtNSAtNSA1IC01eiIvPjwvc3ZnPg==" alt="Griffin">
+                    <div>Griffin</div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="action-btn" id="feed-btn">
+                    <i>🍕</i>
+                    <span>Feed</span>
+                </button>
+                <button class="action-btn" id="play-btn">
+                    <i>🎮</i>
+                    <span>Play Mini-Game</span>
+                </button>
+                <button class="action-btn" id="clean-btn">
+                    <i>✨</i>
+                    <span>Clean</span>
+                </button>
+                <button class="action-btn" id="sleep-btn">
+                    <i>😴</i>
+                    <span>Put to Sleep</span>
+                </button>
+                <button class="action-btn" id="evolve-btn">
+                    <i>⭐</i>
+                    <span>Evolve</span>
+                </button>
+            </div>
+            
+            <div class="mini-game" id="matching-game">
+                <div class="game-header">
+                    <h3>Matching Game</h3>
+                    <button class="close-game">&times;</button>
+                </div>
+                <p>Find all matching pairs to earn rewards for your pet!</p>
+                <div class="matching-game">
+                    <div class="card">🐾</div>
+                    <div class="card">🐾</div>
+                    <div class="card">🌟</div>
+                    <div class="card">🌟</div>
+                    <div class="card">🍕</div>
+                    <div class="card">🍕</div>
+                    <div class="card">🎮</div>
+                    <div class="card">🎮</div>
+                </div>
+            </div>
+            
+            <div class="mini-game" id="rhythm-game">
+                <div class="game-header">
+                    <h3>Rhythm Game</h3>
+                    <button class="close-game">&times;</button>
+                </div>
+                <p>Press the keys in rhythm to make your pet happy!</p>
+                <div class="rhythm-notes">
+                    <div class="note">A</div>
+                    <div class="note">S</div>
+                    <div class="note">D</div>
+                    <div class="note">F</div>
+                </div>
+                <p>Press the keys when they light up!</p>
+            </div>
+            
+            <div class="social-share">
+                <a href="#" class="social-btn">📱 Share on Twitter</a>
+                <a href="#" class="social-btn">📱 Share on Facebook</a>
+                <a href="#" class="social-btn">📱 Invite Friends</a>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 Pet Sanctuary: Virtual Pet Care Simulator. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Three.js 3D scene
+        let scene, camera, renderer, petMesh;
+        
+        function init3D() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x8f94fb);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(document.getElementById('pet-3d-view').offsetWidth, 
+                             document.getElementById('pet-3d-view').offsetHeight);
+            document.getElementById('pet-3d-view').appendChild(renderer.domElement);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+            
+            // Create a simple pet geometry (cube for demonstration)
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            const material = new THREE.MeshPhongMaterial({ color: 0xff6b6b });
+            petMesh = new THREE.Mesh(geometry, material);
+            scene.add(petMesh);
+            
+            // Add orbit controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.25;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                petMesh.rotation.x += 0.01;
+                petMesh.rotation.y += 0.01;
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = document.getElementById('pet-3d-view').offsetWidth / 
+                                document.getElementById('pet-3d-view').offsetHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(document.getElementById('pet-3d-view').offsetWidth, 
+                                document.getElementById('pet-3d-view').offsetHeight);
+            });
+        }
+        
+        // Game state
+        const gameState = {
+            happiness: 75,
+            hunger: 60,
+            energy: 80,
+            currentPet: 'dragon'
+        };
+        
+        // DOM elements
+        const happinessEl = document.getElementById('happiness');
+        const hungerEl = document.getElementById('hunger');
+        const energyEl = document.getElementById('energy');
+        const feedBtn = document.getElementById('feed-btn');
+        const playBtn = document.getElementById('play-btn');
+        const cleanBtn = document.getElementById('clean-btn');
+        const sleepBtn = document.getElementById('sleep-btn');
+        const evolveBtn = document.getElementById('evolve-btn');
+        const matchingGame = document.getElementById('matching-game');
+        const rhythmGame = document.getElementById('rhythm-game');
+        const closeGameBtns = document.querySelectorAll('.close-game');
+        const petOptions = document.querySelectorAll('.pet-option');
+        
+        // Update stats display
+        function updateStats() {
+            happinessEl.textContent = `${gameState.happiness}%`;
+            document.querySelector('#happiness + .progress-bar .progress-fill').style.width = `${gameState.happiness}%`;
+            
+            hungerEl.textContent = `${gameState.hunger}%`;
+            document.querySelector('#hunger + .progress-bar .progress-fill').style.width = `${gameState.hunger}%`;
+            
+            energyEl.textContent = `${gameState.energy}%`;
+            document.querySelector('#energy + .progress-bar .progress-fill').style.width = `${gameState.energy}%`;
+        }
+        
+        // Event listeners
+        feedBtn.addEventListener('click', () => {
+            gameState.hunger = Math.min(100, gameState.hunger + 20);
+            gameState.happiness = Math.min(100, gameState.happiness + 5);
+            updateStats();
+            
+            // Animate the pet
+            petMesh.scale.set(1.2, 1.2, 1.2);
+            setTimeout(() => petMesh.scale.set(1, 1, 1), 300);
+        });
+        
+        playBtn.addEventListener('click', () => {
+            // Show a random mini-game
+            const randomGame = Math.random() > 0.5 ? matchingGame : rhythmGame;
+            randomGame.style.display = 'block';
+        });
+        
+        cleanBtn.addEventListener('click', () => {
+            gameState.happiness = Math.min(100, gameState.happiness + 10);
+            updateStats();
+            
+            // Animate the pet
+            petMesh.rotation.x += Math.PI / 2;
+        });
+        
+        sleepBtn.addEventListener('click', () => {
+            gameState.energy = Math.min(100, gameState.energy + 30);
+            updateStats();
+            
+            // Animate the pet
+            petMesh.material.color.set(0x6666ff);
+            setTimeout(() => petMesh.material.color.set(0xff6b6b), 1000);
+        });
+        
+        evolveBtn.addEventListener('click', () => {
+            if (gameState.happiness >= 90 && gameState.hunger >= 80 && gameState.energy >= 85) {
+                alert('Your pet is evolving! Congratulations!');
+                petMesh.scale.set(1.5, 1.5, 1.5);
+                petMesh.material.color.set(0xffff00);
+            } else {
+                alert('Your pet is not ready to evolve yet. Keep caring for it!');
+            }
+        });
+        
+        closeGameBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                matchingGame.style.display = 'none';
+                rhythmGame.style.display = 'none';
+                
+                // Reward player for playing the game
+                gameState.happiness = Math.min(100, gameState.happiness + 15);
+                gameState.energy = Math.max(0, gameState.energy - 10);
+                updateStats();
+            });
+        });
+        
+        petOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                petOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                gameState.currentPet = option.dataset.pet;
+                
+                // Change pet color based on selection
+                switch(gameState.currentPet) {
+                    case 'dragon':
+                        petMesh.material.color.set(0xff6b6b);
+                        break;
+                    case 'phoenix':
+                        petMesh.material.color.set(0xffcc00);
+                        break;
+                    case 'unicorn':
+                        petMesh.material.color.set(0xffffff);
+                        break;
+                    case 'griffin':
+                        petMesh.material.color.set(0xca8833);
+                        break;
+                }
+            });
+        });
+        
+        // Simple matching game logic
+        const cards = document.querySelectorAll('.matching-game .card');
+        let flippedCards = [];
+        
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                if (flippedCards.length < 2 && !card.classList.contains('flipped')) {
+                    card.classList.add('flipped');
+                    flippedCards.push(card);
+                    
+                    if (flippedCards.length === 2) {
+                        // Check for match
+                        if (flippedCards[0].textContent === flippedCards[1].textContent) {
+                            // Match found
+                            flippedCards = [];
+                            
+                            // Check if all cards are flipped
+                            if (document.querySelectorAll('.matching-game .card.flipped').length === cards.length) {
+                                setTimeout(() => {
+                                    alert('You won the matching game! Your pet is happy!');
+                                    document.querySelector('.close-game').click();
+                                }, 500);
+                            }
+                        } else {
+                            // No match
+                            setTimeout(() => {
+                                flippedCards.forEach(c => c.classList.remove('flipped'));
+                                flippedCards = [];
+                            }, 1000);
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Simple rhythm game logic
+        const notes = document.querySelectorAll('.rhythm-game .note');
+        let currentNote = 0;
+        
+        function activateNote() {
+            notes.forEach(note => note.classList.remove('active'));
+            notes[currentNote].classList.add('active');
+            currentNote = (currentNote + 1) % notes.length;
+        }
+        
+        setInterval(activateNote, 500);
+        
+        // Initialize the game
+        window.addEventListener('load', () => {
+            init3D();
+            updateStats();
+        });
+    </script>
+</body>
+</html>
